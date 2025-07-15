@@ -1,0 +1,24 @@
+Cybersecurity Simulation Report
+========================================
+Attack Description: malfunction of sensors
+
+Total Devices: 8
+Affected Devices: 7
+Propagation Rate: 0.88
+Risk Increase: -0.05
+Attack Duration: 7.24s
+
+Attack Timeline:
+- IoT Sensor 1 | Risk: 0.30 | Time: 0.0s
+- IoT Sensor 2 | Risk: 0.40 | Time: 0.0s
+- SCADA Server | Risk: 0.70 | Time: 0.0s
+- Manufacturing Database | Risk: 0.90 | Time: 2.0s
+- PLC Controller | Risk: 0.60 | Time: 4.5s
+- Edge Gateway | Risk: 0.50 | Time: 5.7s
+- Industrial Robot | Risk: 0.80 | Time: 7.2s
+
+Critical Devices Compromised:
+- Industrial Robot
+- Manufacturing Database
+
+Resilience Score: 0.00

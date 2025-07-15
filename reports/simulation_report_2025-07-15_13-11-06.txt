@@ -1,0 +1,18 @@
+Cybersecurity Simulation Report
+========================================
+Attack Description: 
+
+Total Devices: 8
+Affected Devices: 3
+Propagation Rate: 0.38
+Risk Increase: -0.37
+Attack Duration: 3.96s
+
+Attack Timeline:
+- IoT Sensor 2 | Risk: 0.40 | Time: 0.0s
+- Edge Gateway | Risk: 0.50 | Time: 0.0s
+- SCADA Server | Risk: 0.70 | Time: 4.0s
+
+Critical Devices Compromised:
+
+Resilience Score: 1.00

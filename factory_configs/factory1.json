@@ -1,0 +1,13 @@
+{
+  "devices": {
+    "Sensor A": 0.3,
+    "Controller B": 0.5,
+    "PLC C": 0.6,
+    "Robot D": 0.8
+  },
+  "dependencies": [
+    { "from": "Sensor A", "to": "Controller B", "weight": 1.0 },
+    { "from": "Controller B", "to": "PLC C", "weight": 1.5 },
+    { "from": "PLC C", "to": "Robot D", "weight": 0.7 }
+  ]
+}

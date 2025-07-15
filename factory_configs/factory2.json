@@ -1,0 +1,25 @@
+{
+    "devices": {
+        "Sensor X": 0.4,
+        "Controller Y": 0.6,
+        "HMI Z": 0.7,
+        "Database D": 0.9
+    },
+    "dependencies": [
+        {
+            "from": "Sensor X",
+            "to": "Controller Y",
+            "weight": 1.2
+        },
+        {
+            "from": "Controller Y",
+            "to": "HMI Z",
+            "weight": 1.0
+        },
+        {
+            "from": "HMI Z",
+            "to": "Database D",
+            "weight": 0.8
+        }
+    ]
+}

@@ -1,0 +1,5 @@
+
+{
+  "attack_entry": ["Sensor A", "PLC C"],
+  "description": "Simultaneous attack from edge and control layers."
+}
