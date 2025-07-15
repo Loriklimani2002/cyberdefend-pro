@@ -117,29 +117,149 @@ def main():
         
         st.markdown("---")
         
+        with st.expander("🔍 Network Data Debug", expanded=False):  # expanded=False makes it collapsed by default
+            st.write("Current network data:", st.session_state.get('network_data', {}).get("devices", "No devices loaded"))
+            st.write("Full network state:", st.session_state.get('network_data', "No network data loaded"))
+
         # Attack Scenario Section
         st.markdown("#### ⚠️ Attack Scenario")
-        if st.session_state.network_data:
-            available_devices = list(st.session_state.network_data["devices"].keys())
+
+        # Ensure network data is loaded
+        if not st.session_state.get('network_data') or not st.session_state.network_data.get("devices"):
+            st.error("❌ No network devices loaded - please configure network first")
+            st.markdown("---")
+            return
+
+        available_devices = list(st.session_state.network_data["devices"].keys())
+
+        # Input method selection
+        attack_input_method = st.radio(
+            "Configure attack via:",
+            ["Automatic selection", "Manual selection", "File upload"],
+            horizontal=True,
+            key="attack_method_selector"
+        )
+
+        # ------------------------
+        # 1. ✅ Automatic selection
+        # ------------------------
+        if attack_input_method == "Automatic selection":
+            st.markdown("Automatically select the top risky devices.")
+
+            top_n = st.slider("Number of entry points", 1, len(available_devices), 2)
             
-            attack_entry_points = st.multiselect(
-                "Select attack entry points:",
+            sorted_devices = sorted(
                 available_devices,
-                help="Choose which devices will be initially compromised"
+                key=lambda d: st.session_state.network_data["devices"][d],
+                reverse=True
             )
+            attack_entry_points = sorted_devices[:top_n]
+            avg_risk = sum(st.session_state.network_data["devices"][d] for d in attack_entry_points) / len(attack_entry_points)
+
+            st.info(f"Selected: {', '.join(attack_entry_points)}")
+            st.metric("Average Risk Score", f"{avg_risk:.2f}")
+
+            attack_description = st.text_area(
+                "Attack description:",
+                placeholder="Describe the attack...",
+                key="auto_attack_desc"
+            )
+
+            if st.button("Set Attack Scenario", key="set_auto_attack"):
+                st.session_state.attack_scenario = {
+                    "attack_entry": attack_entry_points,
+                    "description": attack_description or f"Automatically selected top {top_n} risky devices"
+                }
+                st.success("✅ Attack scenario configured automatically!")
+                with st.expander("Current Attack Scenario"):
+                    st.json(st.session_state.attack_scenario)
+                    st.download_button(
+                        label="💾 Save Current Scenario",
+                        data=json.dumps(st.session_state.attack_scenario, indent=2),
+                        file_name=f"attack_{datetime.now().strftime('%Y%m%d')}.json",
+                        mime="application/json"
+                    )
+
+        # ------------------------
+        # 2. ✍️ Manual selection
+        # ------------------------
+        elif attack_input_method == "Manual selection":
+            st.markdown(f"Available devices ({len(available_devices)}):")
+            st.code(", ".join(available_devices))
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                attack_entry_points = st.multiselect(
+                    "Select attack entry points:",
+                    available_devices,
+                    help="Choose which devices will be initially compromised",
+                    key="attack_points"
+                )
+            with col2:
+                if attack_entry_points:
+                    risk_scores = [st.session_state.network_data["devices"][d] for d in attack_entry_points]
+                    st.metric("Average Risk Score", f"{sum(risk_scores)/len(risk_scores):.2f}")
             
             attack_description = st.text_area(
                 "Attack description:",
-                placeholder="Describe the attack scenario..."
+                placeholder="Describe the attack...",
+                key="manual_attack_desc"
             )
-            
-            if attack_entry_points:
-                st.session_state.attack_scenario = {
-                    "attack_entry": attack_entry_points,
-                    "description": attack_description
-                }
-        
+
+            if st.button("Set Attack Scenario", key="set_manual_attack"):
+                if attack_entry_points:
+                    st.session_state.attack_scenario = {
+                        "attack_entry": attack_entry_points,
+                        "description": attack_description or "Manual attack scenario"
+                    }
+                    st.success("✅ Manual attack scenario set!")
+                    with st.expander("Current Attack Scenario"):
+                        st.json(st.session_state.attack_scenario)
+                        st.download_button(
+                            label="💾 Save Current Scenario",
+                            data=json.dumps(st.session_state.attack_scenario, indent=2),
+                            file_name=f"attack_{datetime.now().strftime('%Y%m%d')}.json",
+                            mime="application/json"
+                        )
+                else:
+                    st.error("Please select at least one attack entry point.")
+
+        # ------------------------
+        # 3. 📁 File upload
+        # ------------------------
+        elif attack_input_method == "File upload":
+            uploaded_attack = st.file_uploader(
+                "Upload attack scenario (JSON)",
+                type=['json'],
+                help="Must contain 'attack_entry' list and optional 'description'"
+            )
+
+            if uploaded_attack:
+                try:
+                    attack_data = json.load(uploaded_attack)
+                    if "attack_entry" not in attack_data or not isinstance(attack_data["attack_entry"], list):
+                        st.error("❌ Invalid format: Missing or malformed 'attack_entry'")
+                    else:
+                        invalid_devices = [
+                            dev for dev in attack_data["attack_entry"]
+                            if dev not in available_devices
+                        ]
+                        if invalid_devices:
+                            st.error(f"❌ Devices not in network: {', '.join(invalid_devices)}")
+                        elif not attack_data["attack_entry"]:
+                            st.error("❌ Attack entry points cannot be empty")
+                        else:
+                            st.session_state.attack_scenario = {
+                                "attack_entry": attack_data["attack_entry"],
+                                "description": attack_data.get("description", "Uploaded attack scenario")
+                            }
+                            st.success("✅ Uploaded attack scenario configured!")
+                            st.json(st.session_state.attack_scenario)
+                except json.JSONDecodeError:
+                    st.error("❌ Invalid JSON file - please check the format")
+
         st.markdown("---")
+
         
         # Simulation Controls
         st.markdown("#### 🎮 Simulation Controls")
@@ -218,12 +338,18 @@ def main():
                 st.success(f"Report saved to: {report_path}")
         
         # Simulation log
-        st.markdown("### 📋 Simulation Log")
-        log_container = st.empty()
-        
-        if st.session_state.simulation_log:
-            log_text = "\n".join(st.session_state.simulation_log[-10:])  # Show last 10 entries
-            log_container.text_area("", value=log_text, height=200, disabled=True)
+        try:
+            if st.session_state.simulation_log:
+                log_text = "\n".join(st.session_state.simulation_log[-10:])
+                st.text_area(
+                    "simulation_log",
+                    value=log_text,
+                    height=200,
+                    disabled=True,
+                    label_visibility="collapsed"
+                )
+        except Exception as e:
+            st.error(f"Error displaying logs: {str(e)}")
 
 def run_simulation(speed, real_time):
     """Run the cyber attack simulation"""
